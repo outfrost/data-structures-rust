@@ -97,6 +97,21 @@ impl<T> IndexMut<usize> for ArrayList<T> {
 	}
 }
 
+impl<T: PartialEq> PartialEq for ArrayList<T> {
+	fn eq(&self, other: &Self) -> bool {
+		let mut equal = self.len() == other.len();
+		let mut i = 0;
+		let len = self.len();
+		while equal && i < len {
+			if self[i] != other[i] {
+				equal = false;
+			}
+			i += 1;
+		}
+		equal
+	}
+}
+
 impl<T: Debug> Debug for ArrayList<T> {
 	fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
 		fmt.debug_struct(&("ArrayList<".to_owned() + std::any::type_name::<T>() + ">"))
@@ -133,7 +148,7 @@ mod tests {
 
 		println!("{:?}", a);
 
-		//assert_eq!(a, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, -5] as &[i32]);
+		assert_eq!(a, ArrayList::from(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, -5] as &[i32]));
 
 		assert_eq!(a.len(), 17);
 		for i in 0..16 {
