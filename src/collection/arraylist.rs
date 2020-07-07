@@ -6,34 +6,29 @@ const EXTENT_LEN: usize = 16;
 
 pub struct ArrayList<T>{
 	buf: *mut T,
-	buf_layout: Layout,
 	buf_extents: usize,
 	len: usize,
 }
 
 impl<T> ArrayList<T> {
 	pub fn new() -> ArrayList<T> {
-		let buf_layout = Self::layout();
 		ArrayList {
-			buf: unsafe { alloc::alloc(buf_layout) as *mut T },
-			buf_layout,
+			buf: unsafe { alloc::alloc(Self::layout()) as *mut T },
 			buf_extents: 1,
 			len: 0,
 		}
 	}
 
 	pub fn with_capacity(cap: usize) -> ArrayList<T> {
-		let buf_layout = Self::layout();
 		let mut buf_extents = cap / EXTENT_LEN;
 		if cap % EXTENT_LEN > 0 {
 			buf_extents += 1;
 		}
 		ArrayList {
 			buf: unsafe { alloc::realloc(
-				alloc::alloc(buf_layout),
-				buf_layout,
-				buf_layout.size() * buf_extents) as *mut T },
-			buf_layout,
+				alloc::alloc(Self::layout()),
+				Self::layout(),
+				Self::layout().size() * buf_extents) as *mut T },
 			buf_extents,
 			len: 0,
 		}
@@ -50,8 +45,8 @@ impl<T> ArrayList<T> {
 			self.buf = unsafe {
 				alloc::realloc(
 					self.buf as *mut u8,
-					self.buf_layout,
-					self.buf_layout.size() * self.buf_extents) as *mut T };
+					Self::layout(),
+					Self::layout().size() * self.buf_extents) as *mut T };
 		}
 		let last_idx = self.len - 1;
 		self[last_idx] = item;
@@ -64,7 +59,7 @@ impl<T> ArrayList<T> {
 
 impl<T> Drop for ArrayList<T> {
 	fn drop(&mut self) {
-		unsafe { alloc::dealloc(self.buf as *mut u8, self.buf_layout); }
+		unsafe { alloc::dealloc(self.buf as *mut u8, Self::layout()); }
 	}
 }
 
