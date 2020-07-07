@@ -45,6 +45,12 @@ impl<T> ArrayList<T> {
 	}
 }
 
+impl<T> Drop for ArrayList<T> {
+	fn drop(&mut self) {
+		unsafe { alloc::dealloc(self.buf as *mut u8, self.buf_layout); }
+	}
+}
+
 impl<T> Index<usize> for ArrayList<T> {
 	type Output = T;
 
