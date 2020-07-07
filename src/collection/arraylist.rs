@@ -1,5 +1,5 @@
 use std::alloc::{self, Layout};
-use std::mem;
+use std::fmt::{self, Debug};
 use std::ops::{Index, IndexMut};
 
 const EXTENT_LEN: usize = 16;
@@ -97,6 +97,23 @@ impl<T> IndexMut<usize> for ArrayList<T> {
 	}
 }
 
+impl<T: Debug> Debug for ArrayList<T> {
+	fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
+		fmt.debug_struct(&("ArrayList<".to_owned() + std::any::type_name::<T>() + ">"))
+			.field("len", &self.len)
+			.field("buf_extents", &self.buf_extents)
+			.finish()?;
+
+		fmt.write_str(" ")?;
+
+		let mut dbg = fmt.debug_list();
+		for i in 0..self.len() {
+			dbg.entry(&self[i]);
+		}
+		dbg.finish()
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;
@@ -105,12 +122,18 @@ mod tests {
 	fn i32_add() {
 		let mut a = ArrayList::from(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] as &[i32]);
 
+		println!("{:?}", a);
+
 		assert_eq!(a.len(), 16);
 		for i in 0..16 {
 			assert_eq!(a[i], i as i32);
 		}
 
 		a.add(-5);
+
+		println!("{:?}", a);
+
+		//assert_eq!(a, &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, -5] as &[i32]);
 
 		assert_eq!(a.len(), 17);
 		for i in 0..16 {
