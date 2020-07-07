@@ -38,6 +38,10 @@ impl<T> ArrayList<T> {
 		self.len
 	}
 
+	pub fn capacity(&self) -> usize {
+		self.buf_extents * EXTENT_LEN
+	}
+
 	pub fn add(&mut self, item: T) {
 		self.len += 1;
 		if self.len > EXTENT_LEN * self.buf_extents {
@@ -134,26 +138,52 @@ mod tests {
 	use super::*;
 
 	#[test]
+	fn i32_new() {	
+		let a = ArrayList::<i32>::new();
+		assert_eq!(a.len(), 0);
+	}
+
+	#[test]
+	fn i32_with_capacity() {
+		let a = ArrayList::<i32>::with_capacity(34);
+		assert_eq!(a.len(), 0);
+		assert_eq!(a.capacity(), 48);
+	}
+
+	#[test]
+	fn i32_from_slice() {
+		let a = ArrayList::from(&[] as &[i32]);
+		assert_eq!(a, ArrayList::new());
+	}
+
+	#[test]
+	fn i32_index() {
+		let a = ArrayList::from(&[4, 2, 0, 69] as &[i32]);
+		assert_eq!(a[3], 69);
+	}
+
+	#[test]
+	fn i32_index_mut() {
+		let mut a = ArrayList::from(&[4, 2, 0, 69] as &[i32]);
+		a[2] = -1;
+		assert_eq!(a, ArrayList::from(&[4, 2, -1, 69] as &[i32]));
+	}
+
+	#[test]
 	fn i32_add() {
-		let mut a = ArrayList::from(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] as &[i32]);
-
-		println!("{:?}", a);
-
-		assert_eq!(a.len(), 16);
-		for i in 0..16 {
-			assert_eq!(a[i], i as i32);
-		}
-
+		let mut a = ArrayList::from(&[4, 2, 0, 69] as &[i32]);
+		assert_eq!(a.buf_extents, 1);
 		a.add(-5);
+		assert_eq!(a, ArrayList::from(&[4, 2, 0, 69, -5] as &[i32]));
+		assert_eq!(a.buf_extents, 1);
+	}
 
-		println!("{:?}", a);
-
+	#[test]
+	fn i32_add_realloc() {
+		let mut a = ArrayList::from(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] as &[i32]);
+		assert_eq!(a.buf_extents, 1);
+		a.add(-5);
 		assert_eq!(a, ArrayList::from(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, -5] as &[i32]));
-
-		assert_eq!(a.len(), 17);
-		for i in 0..16 {
-			assert_eq!(a[i], i as i32);
-		}
-		assert_eq!(a[16], -5);
+		assert_eq!(a.buf_extents, 2);
 	}
 }
