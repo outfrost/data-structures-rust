@@ -22,6 +22,23 @@ impl<T> ArrayList<T> {
 		}
 	}
 
+	pub fn with_capacity(cap: usize) -> ArrayList<T> {
+		let buf_layout = Self::layout();
+		let mut buf_extents = cap / EXTENT_LEN;
+		if cap % EXTENT_LEN > 0 {
+			buf_extents += 1;
+		}
+		ArrayList {
+			buf: unsafe { alloc::realloc(
+				alloc::alloc(buf_layout),
+				buf_layout,
+				buf_layout.size() * buf_extents) as *mut T },
+			buf_layout,
+			buf_extents,
+			len: 0,
+		}
+	}
+
 	pub fn len(&self) -> usize {
 		self.len
 	}
@@ -48,6 +65,16 @@ impl<T> ArrayList<T> {
 impl<T> Drop for ArrayList<T> {
 	fn drop(&mut self) {
 		unsafe { alloc::dealloc(self.buf as *mut u8, self.buf_layout); }
+	}
+}
+
+impl<T: Clone> From<&[T]> for ArrayList<T> {
+	fn from(s: &[T]) -> ArrayList<T> {
+		let mut arraylist = Self::with_capacity(s.len());
+		for item in s.iter() {
+			arraylist.add(item.clone());
+		}
+		arraylist
 	}
 }
 
@@ -81,17 +108,7 @@ mod tests {
 
 	#[test]
 	fn i32_add() {
-		let buf_layout = ArrayList::<i32>::layout();
-		let mut a = ArrayList::<i32> {
-			buf: unsafe { alloc::alloc(buf_layout) as *mut i32 },
-			buf_layout,
-			buf_extents: 1,
-			len: EXTENT_LEN,
-		};
-
-		for i in 0..16 {
-			a[i] = i as i32;
-		}
+		let mut a = ArrayList::from(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] as &[i32]);
 
 		assert_eq!(a.len(), 16);
 		for i in 0..16 {
