@@ -233,4 +233,22 @@ mod tests {
 		assert_eq!(a, ArrayList::from(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, -5] as &[i32]));
 		assert_eq!(a.buf_extents, 2);
 	}
+
+	#[test]
+	fn i32_remove() {
+		let mut a = ArrayList::from(&[4, 2, 0, 69] as &[i32]);
+		assert_eq!(a.buf_extents, 1);
+		assert_eq!(a.remove(1), 2);
+		assert_eq!(a, ArrayList::from(&[4, 0, 69] as &[i32]));
+		assert_eq!(a.buf_extents, 1);
+	}
+
+	#[test]
+	fn i32_remove_realloc() {
+		let mut a = ArrayList::from(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] as &[i32]);
+		assert_eq!(a.buf_extents, 2);
+		assert_eq!(a.remove(4), 4);
+		assert_eq!(a, ArrayList::from(&[0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] as &[i32]));
+		assert_eq!(a.buf_extents, 1);
+	}
 }
