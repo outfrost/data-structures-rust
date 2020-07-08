@@ -58,7 +58,7 @@ impl<T> ArrayList<T> {
 		self[index] = item;
 	}
 
-	pub fn add(&mut self, item: T) {
+	pub fn push(&mut self, item: T) {
 		self.extend(1);
 		let last_idx = self.len - 1;
 		self[last_idx] = item;
@@ -91,7 +91,7 @@ impl<T: Clone> From<&[T]> for ArrayList<T> {
 	fn from(s: &[T]) -> ArrayList<T> {
 		let mut arraylist = Self::with_capacity(s.len());
 		for item in s.iter() {
-			arraylist.add(item.clone());
+			arraylist.push(item.clone());
 		}
 		arraylist
 	}
@@ -208,19 +208,19 @@ mod tests {
 	}
 
 	#[test]
-	fn i32_add() {
+	fn i32_push() {
 		let mut a = ArrayList::from(&[4, 2, 0, 69] as &[i32]);
 		assert_eq!(a.buf_extents, 1);
-		a.add(-5);
+		a.push(-5);
 		assert_eq!(a, ArrayList::from(&[4, 2, 0, 69, -5] as &[i32]));
 		assert_eq!(a.buf_extents, 1);
 	}
 
 	#[test]
-	fn i32_add_realloc() {
+	fn i32_push_realloc() {
 		let mut a = ArrayList::from(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] as &[i32]);
 		assert_eq!(a.buf_extents, 1);
-		a.add(-5);
+		a.push(-5);
 		assert_eq!(a, ArrayList::from(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, -5] as &[i32]));
 		assert_eq!(a.buf_extents, 2);
 	}
