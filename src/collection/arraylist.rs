@@ -66,8 +66,17 @@ impl<T> ArrayList<T> {
 
 	fn extend(&mut self, count: usize) {
 		self.len += count;
-		if self.len > self.buf_extents * EXTENT_LEN {
-			self.buf_extents += 1;
+		let required_extents = self.len / EXTENT_LEN;
+		let required_extents = {
+			if self.len % EXTENT_LEN > 0 {
+				required_extents + 1
+			}
+			else {
+				required_extents
+			}
+		};
+		if self.buf_extents < required_extents {
+			self.buf_extents = required_extents;
 			self.buf = unsafe {
 				alloc::realloc(
 					self.buf as *mut u8,
