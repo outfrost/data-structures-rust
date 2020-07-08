@@ -1,6 +1,7 @@
 use std::alloc::{self, Layout};
 use std::fmt::{self, Debug};
 use std::ops::{Index, IndexMut};
+use std::ptr;
 
 const EXTENT_LEN: usize = 16;
 
@@ -42,9 +43,32 @@ impl<T> ArrayList<T> {
 		self.buf_extents * EXTENT_LEN
 	}
 
+	pub fn insert(&mut self, index: usize, item: T) {
+		if index > self.len {
+			panic!("Index out of bounds");
+		}
+		self.len += 1;
+		if self.len > self.buf_extents * EXTENT_LEN {
+			self.buf_extents += 1;
+			self.buf = unsafe {
+				alloc::realloc(
+					self.buf as *mut u8,
+					Self::layout(),
+					Self::layout().size() * self.buf_extents) as *mut T };
+		}
+		let mut i = self.len - 1;
+		while i > index {
+			unsafe {
+				ptr::copy_nonoverlapping(self.buf.add(i - 1), self.buf.add(i), 1);
+			}
+			i -= 1;
+		}
+		self[index] = item;
+	}
+
 	pub fn add(&mut self, item: T) {
 		self.len += 1;
-		if self.len > EXTENT_LEN * self.buf_extents {
+		if self.len > self.buf_extents * EXTENT_LEN {
 			self.buf_extents += 1;
 			self.buf = unsafe {
 				alloc::realloc(
@@ -167,6 +191,24 @@ mod tests {
 		let mut a = ArrayList::from(&[4, 2, 0, 69] as &[i32]);
 		a[2] = -1;
 		assert_eq!(a, ArrayList::from(&[4, 2, -1, 69] as &[i32]));
+	}
+
+	#[test]
+	fn i32_insert() {
+		let mut a = ArrayList::from(&[4, 2, 0, 69] as &[i32]);
+		assert_eq!(a.buf_extents, 1);
+		a.insert(3, 1337);
+		assert_eq!(a, ArrayList::from(&[4, 2, 0, 1337, 69] as &[i32]));
+		assert_eq!(a.buf_extents, 1);
+	}
+
+	#[test]
+	fn i32_insert_reallocate() {
+		let mut a = ArrayList::from(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] as &[i32]);
+		assert_eq!(a.buf_extents, 1);
+		a.insert(3, -99);
+		assert_eq!(a, ArrayList::from(&[0, 1, 2, -99, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] as &[i32]));
+		assert_eq!(a.buf_extents, 2);
 	}
 
 	#[test]
