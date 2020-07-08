@@ -47,15 +47,7 @@ impl<T> ArrayList<T> {
 		if index > self.len {
 			panic!("Index out of bounds");
 		}
-		self.len += 1;
-		if self.len > self.buf_extents * EXTENT_LEN {
-			self.buf_extents += 1;
-			self.buf = unsafe {
-				alloc::realloc(
-					self.buf as *mut u8,
-					Self::layout(),
-					Self::layout().size() * self.buf_extents) as *mut T };
-		}
+		self.extend(1);
 		let mut i = self.len - 1;
 		while i > index {
 			unsafe {
@@ -67,7 +59,13 @@ impl<T> ArrayList<T> {
 	}
 
 	pub fn add(&mut self, item: T) {
-		self.len += 1;
+		self.extend(1);
+		let last_idx = self.len - 1;
+		self[last_idx] = item;
+	}
+
+	fn extend(&mut self, count: usize) {
+		self.len += count;
 		if self.len > self.buf_extents * EXTENT_LEN {
 			self.buf_extents += 1;
 			self.buf = unsafe {
@@ -76,8 +74,6 @@ impl<T> ArrayList<T> {
 					Self::layout(),
 					Self::layout().size() * self.buf_extents) as *mut T };
 		}
-		let last_idx = self.len - 1;
-		self[last_idx] = item;
 	}
 
 	fn layout() -> Layout {
