@@ -1,5 +1,6 @@
 use std::alloc::{self, Layout};
 use std::fmt::{self, Debug};
+use std::mem::MaybeUninit;
 use std::ops::{Index, IndexMut};
 use std::ptr;
 
@@ -47,7 +48,7 @@ impl<T> ArrayList<T> {
 		if index > self.len {
 			panic!("Index out of bounds");
 		}
-		self.extend(1);
+		self.grow(1);
 		let mut i = self.len - 1;
 		while i > index {
 			unsafe {
@@ -59,13 +60,36 @@ impl<T> ArrayList<T> {
 	}
 
 	pub fn push(&mut self, item: T) {
-		self.extend(1);
+		self.grow(1);
 		let last_idx = self.len - 1;
 		self[last_idx] = item;
 	}
 
-	fn extend(&mut self, count: usize) {
+	pub fn remove(&mut self, index: usize) -> T {
+		if index >= self.len {
+			panic!("Index out of bounds");
+		}
+		let item = unsafe {
+			let mut space = MaybeUninit::<T>::uninit();
+			ptr::copy_nonoverlapping(self.buf.add(index), space.as_mut_ptr(), 1);
+			ptr::copy(self.buf.add(index + 1), self.buf.add(index), self.len - index - 1);
+			space.assume_init()
+		};
+		self.shrink(1);
+		item
+	}
+
+	fn grow(&mut self, count: usize) {
 		self.len += count;
+		self.adjust_extents();
+	}
+
+	fn shrink(&mut self, count: usize) {
+		self.len -= count;
+		self.adjust_extents();
+	}
+
+	fn adjust_extents(&mut self) {
 		let required_extents = self.len / EXTENT_LEN;
 		let required_extents = {
 			if self.len % EXTENT_LEN > 0 {
@@ -75,7 +99,7 @@ impl<T> ArrayList<T> {
 				required_extents
 			}
 		};
-		if self.buf_extents < required_extents {
+		if self.buf_extents != required_extents {
 			self.buf_extents = required_extents;
 			self.buf = unsafe {
 				alloc::realloc(

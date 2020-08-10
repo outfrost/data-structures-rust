@@ -1,1 +1,1 @@
-mod collection;
+pub mod collection;
