@@ -81,32 +81,37 @@ impl<T> ArrayList<T> {
 
 	fn grow(&mut self, count: usize) {
 		self.len += count;
-		self.adjust_extents();
+		let extents = self.required_extents();
+		if self.buf_extents < extents {
+			self.realloc_extents(extents);
+		}
 	}
 
 	fn shrink(&mut self, count: usize) {
 		self.len -= count;
-		self.adjust_extents();
+		let extents = self.required_extents();
+		if self.buf_extents > extents {
+			self.realloc_extents(extents);
+		}
 	}
 
-	fn adjust_extents(&mut self) {
-		let required_extents = self.len / EXTENT_LEN;
-		let required_extents = {
-			if self.len % EXTENT_LEN > 0 {
-				required_extents + 1
-			}
-			else {
-				required_extents
-			}
-		};
-		if self.buf_extents != required_extents {
-			self.buf_extents = required_extents;
-			self.buf = unsafe {
-				alloc::realloc(
-					self.buf as *mut u8,
-					Self::layout(),
-					Self::layout().size() * self.buf_extents) as *mut T };
+	fn required_extents(&self) -> usize {
+		let extents = self.len / EXTENT_LEN;
+		if self.len % EXTENT_LEN > 0 {
+			extents + 1
 		}
+		else {
+			extents
+		}
+	}
+
+	fn realloc_extents(&mut self, extents: usize) {
+		self.buf_extents = extents;
+		self.buf = unsafe {
+			alloc::realloc(
+				self.buf as *mut u8,
+				Self::layout(),
+				Self::layout().size() * self.buf_extents) as *mut T };
 	}
 
 	fn layout() -> Layout {
