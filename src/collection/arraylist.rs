@@ -52,12 +52,12 @@ impl<T> ArrayList<T> {
 			panic!("Index out of bounds");
 		}
 		self.grow(1);
-		let mut i = self.len - 1;
-		while i > index {
-			unsafe {
-				ptr::copy_nonoverlapping(self.buf.add(i - 1), self.buf.add(i), 1);
-			}
-			i -= 1;
+		unsafe {
+			ptr::copy(
+				self.buf.add(index),
+				self.buf.add(index + 1),
+				self.len - index,
+			);
 		}
 		self[index] = item;
 	}
