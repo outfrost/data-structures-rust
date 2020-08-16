@@ -6,7 +6,7 @@ use std::ptr;
 
 const EXTENT_LEN: usize = 16;
 
-pub struct ArrayList<T>{
+pub struct ArrayList<T> {
 	buf: *mut T,
 	buf_extents: usize,
 	len: usize,
@@ -27,10 +27,13 @@ impl<T> ArrayList<T> {
 			buf_extents += 1;
 		}
 		ArrayList {
-			buf: unsafe { alloc::realloc(
-				alloc::alloc(Self::layout()),
-				Self::layout(),
-				Self::layout().size() * buf_extents) as *mut T },
+			buf: unsafe {
+				alloc::realloc(
+					alloc::alloc(Self::layout()),
+					Self::layout(),
+					Self::layout().size() * buf_extents,
+				) as *mut T
+			},
 			buf_extents,
 			len: 0,
 		}
@@ -72,7 +75,11 @@ impl<T> ArrayList<T> {
 		let item = unsafe {
 			let mut space = MaybeUninit::<T>::uninit();
 			ptr::copy_nonoverlapping(self.buf.add(index), space.as_mut_ptr(), 1);
-			ptr::copy(self.buf.add(index + 1), self.buf.add(index), self.len - index - 1);
+			ptr::copy(
+				self.buf.add(index + 1),
+				self.buf.add(index),
+				self.len - index - 1,
+			);
 			space.assume_init()
 		};
 		self.shrink(1);
@@ -99,8 +106,7 @@ impl<T> ArrayList<T> {
 		let extents = self.len / EXTENT_LEN;
 		if self.len % EXTENT_LEN > 0 {
 			extents + 1
-		}
-		else {
+		} else {
 			extents
 		}
 	}
@@ -111,7 +117,9 @@ impl<T> ArrayList<T> {
 			alloc::realloc(
 				self.buf as *mut u8,
 				Self::layout(),
-				Self::layout().size() * self.buf_extents) as *mut T };
+				Self::layout().size() * self.buf_extents,
+			) as *mut T
+		};
 	}
 
 	fn layout() -> Layout {
@@ -121,7 +129,9 @@ impl<T> ArrayList<T> {
 
 impl<T> Drop for ArrayList<T> {
 	fn drop(&mut self) {
-		unsafe { alloc::dealloc(self.buf as *mut u8, Self::layout()); }
+		unsafe {
+			alloc::dealloc(self.buf as *mut u8, Self::layout());
+		}
 	}
 }
 
@@ -151,7 +161,7 @@ impl<T> Index<usize> for ArrayList<T> {
 impl<T> IndexMut<usize> for ArrayList<T> {
 	fn index_mut(&mut self, index: usize) -> &mut Self::Output {
 		unsafe {
-			if index >= self.len {				
+			if index >= self.len {
 				panic!("Index out of bounds");
 			}
 			&mut (*(self.buf.add(index)))
@@ -196,7 +206,7 @@ mod tests {
 	use super::*;
 
 	#[test]
-	fn i32_new() {	
+	fn i32_new() {
 		let a = ArrayList::<i32>::new();
 		assert_eq!(a.len(), 0);
 	}
@@ -238,10 +248,14 @@ mod tests {
 
 	#[test]
 	fn i32_insert_reallocate() {
-		let mut a = ArrayList::from(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] as &[i32]);
+		let mut a =
+			ArrayList::from(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] as &[i32]);
 		assert_eq!(a.buf_extents, 1);
 		a.insert(3, -99);
-		assert_eq!(a, ArrayList::from(&[0, 1, 2, -99, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] as &[i32]));
+		assert_eq!(
+			a,
+			ArrayList::from(&[0, 1, 2, -99, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] as &[i32])
+		);
 		assert_eq!(a.buf_extents, 2);
 	}
 
@@ -256,10 +270,14 @@ mod tests {
 
 	#[test]
 	fn i32_push_realloc() {
-		let mut a = ArrayList::from(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] as &[i32]);
+		let mut a =
+			ArrayList::from(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] as &[i32]);
 		assert_eq!(a.buf_extents, 1);
 		a.push(-5);
-		assert_eq!(a, ArrayList::from(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, -5] as &[i32]));
+		assert_eq!(
+			a,
+			ArrayList::from(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, -5] as &[i32])
+		);
 		assert_eq!(a.buf_extents, 2);
 	}
 
@@ -274,10 +292,14 @@ mod tests {
 
 	#[test]
 	fn i32_remove_realloc() {
-		let mut a = ArrayList::from(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] as &[i32]);
+		let mut a =
+			ArrayList::from(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] as &[i32]);
 		assert_eq!(a.buf_extents, 2);
 		assert_eq!(a.remove(4), 4);
-		assert_eq!(a, ArrayList::from(&[0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] as &[i32]));
+		assert_eq!(
+			a,
+			ArrayList::from(&[0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] as &[i32])
+		);
 		assert_eq!(a.buf_extents, 1);
 	}
 }
