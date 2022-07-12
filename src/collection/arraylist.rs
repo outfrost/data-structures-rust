@@ -47,6 +47,15 @@ impl<T> ArrayList<T> {
 		self.buf_extents * EXTENT_LEN
 	}
 
+	pub fn clear(&mut self) {
+		for i in 0..self.len {
+			unsafe {
+				ptr::drop_in_place(self.buf.add(i));
+			}
+		}
+		self.shrink(self.len);
+	}
+
 	pub fn insert(&mut self, index: usize, item: T) {
 		if index > self.len {
 			panic!("Index out of bounds");
@@ -222,6 +231,16 @@ mod tests {
 	fn i32_from_slice() {
 		let a = ArrayList::from(&[] as &[i32]);
 		assert_eq!(a, ArrayList::new());
+	}
+
+	#[test]
+	fn i32_clear() {
+		let mut a =
+			ArrayList::from(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] as &[i32]);
+		assert_eq!(a.buf_extents, 2);
+		a.clear();
+		assert_eq!(a, ArrayList::new());
+		assert_eq!(a.buf_extents, 0);
 	}
 
 	#[test]
